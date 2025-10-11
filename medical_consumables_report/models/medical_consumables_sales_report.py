@@ -563,7 +563,7 @@ class MonthlySalesDetailReport(models.TransientModel):
                     })
 
         if line_vals:
-            self.env['medical.consumables.sales.report.line'].create(line_vals)
+            self.env['monthly.sales.detail.report.line'].create(line_vals)
 
         # Excel oluştur
         self._generate_excel_report(report_data)
