@@ -42,6 +42,7 @@
         <field name="model">monthly.sales.detail.invoice.line</field>
         <field name="arch" type="xml">
             <tree>
+                <field name="invoice_id" invisible="1"/>
                 <field name="invoice_name" string="Fatura No"/>
                 <field name="invoice_date" string="Tarih"/>
                 <field name="partner_name" string="Müşteri"/>
