@@ -647,12 +647,12 @@ class MonthlySalesDetailReportLine(models.TransientModel):
     is_category_total = fields.Boolean(string='Is Category Total')
 
 
-class MedicalConsumablesSalesDailyLine(models.TransientModel):
-    _name = 'medical.consumables.sales.daily.line'
-    _description = 'Günlük Satış Raporu Satırı'
+class MonthlySalesDetailDailyLine(models.TransientModel):
+    _name = 'monthly.sales.detail.daily.line'
+    _description = 'Aylık Satış - Günlük Detay Satırı'
 
     report_id = fields.Many2one(
-        'medical.consumables.sales.report',
+        'monthly.sales.detail.report',
         string='Report',
         ondelete='cascade'
     )
