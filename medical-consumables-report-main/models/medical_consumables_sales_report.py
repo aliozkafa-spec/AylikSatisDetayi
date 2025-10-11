@@ -626,3 +626,41 @@ class MedicalConsumablesSalesReportLine(models.TransientModel):
     product_name = fields.Char(string='Product')
     amount = fields.Float(string='Amount')
     is_category_total = fields.Boolean(string='Is Category Total')
+
+
+class MedicalConsumablesSalesDailyLine(models.TransientModel):
+    _name = 'medical.consumables.sales.daily.line'
+    _description = 'Günlük Satış Raporu Satırı'
+
+    report_id = fields.Many2one(
+        'medical.consumables.sales.report',
+        string='Report',
+        ondelete='cascade'
+    )
+    date = fields.Date(string='Tarih')
+    category_id = fields.Many2one('product.category', string='Kategori ID')
+    category_name = fields.Char(string='Kategori')
+    total_amount = fields.Float(string='Toplam Tutar')
+    invoice_count = fields.Integer(string='Fatura Sayısı')
+
+
+class MedicalConsumablesSalesInvoiceLine(models.TransientModel):
+    _name = 'medical.consumables.sales.invoice.line'
+    _description = 'Fatura Detay Raporu Satırı'
+
+    report_id = fields.Many2one(
+        'medical.consumables.sales.report',
+        string='Report',
+        ondelete='cascade'
+    )
+    invoice_id = fields.Many2one('account.move', string='Fatura ID')
+    invoice_name = fields.Char(string='Fatura No')
+    invoice_date = fields.Date(string='Fatura Tarihi')
+    partner_name = fields.Char(string='Müşteri')
+    salesman_name = fields.Char(string='Satış Temsilcisi')
+    amount_total = fields.Float(string='Toplam Tutar')
+    amount_tax = fields.Float(string='Vergi')
+    amount_untaxed = fields.Float(string='Vergi Hariç')
+    payment_state = fields.Char(string='Ödeme Durumu')
+    currency_name = fields.Char(string='Para Birimi')
+    product_lines_json = fields.Text(string='Ürün Satırları (JSON)')
