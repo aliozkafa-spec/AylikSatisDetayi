@@ -662,6 +662,10 @@ class MedicalConsumablesSalesDailyLine(models.TransientModel):
     total_amount = fields.Float(string='Toplam Tutar')
     invoice_count = fields.Integer(string='Fatura Sayısı')
 
+    def drill_down_to_invoices(self):
+        """Bu günün faturalarını göster"""
+        return self.report_id.drill_down_to_invoices()
+
 
 class MedicalConsumablesSalesInvoiceLine(models.TransientModel):
     _name = 'medical.consumables.sales.invoice.line'
