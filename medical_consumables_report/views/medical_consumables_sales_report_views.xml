@@ -60,9 +60,9 @@
     </record>
 
     <!-- Main Report Form View -->
-    <record id="medical_consumables_sales_report_form" model="ir.ui.view">
-        <field name="name">medical.consumables.sales.report.form</field>
-        <field name="model">medical.consumables.sales.report</field>
+    <record id="monthly_sales_detail_report_form" model="ir.ui.view">
+        <field name="name">monthly.sales.detail.report.form</field>
+        <field name="model">monthly.sales.detail.report</field>
         <field name="arch" type="xml">
             <form>
                 <header>
@@ -84,7 +84,7 @@
                 </header>
                 <sheet>
                     <div class="oe_title">
-                        <h1>İki Tarih Aralığında Kategori veya Ürün Bazında Satış Raporu</h1>
+                        <h1>Aylık Satış Detay Rapor</h1>
                         <h2 attrs="{'invisible': [('breadcrumb_text', '=', False)]}">
                             <field name="breadcrumb_text" readonly="1" nolabel="1"/>
                         </h2>
