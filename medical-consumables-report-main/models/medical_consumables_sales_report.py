@@ -418,9 +418,16 @@ class MedicalConsumablesSalesReport(models.TransientModel):
             'target': 'new',
         }
 
-    def drill_down_to_invoices(self, date, category_id=None):
+    def drill_down_to_invoices(self):
         """Günlük raporu fatura detaya açar"""
         self.ensure_one()
+        
+        # Context'ten parametreleri al
+        date = self.env.context.get('default_date')
+        category_id = self.env.context.get('default_category_id')
+        
+        if not date:
+            raise UserError("Tarih bilgisi eksik!")
         
         # Mevcut fatura satırlarını temizle
         if self.invoice_lines:
