@@ -50,6 +50,20 @@ class MedicalConsumablesSalesReport(models.TransientModel):
         )
     )
 
+    # === Navigation ve Drill-Down ===
+    detail_level = fields.Selection([
+        ('monthly', 'Aylık Özet'),
+        ('daily', 'Günlük Detay'),
+        ('invoice', 'Fatura Detayı')
+    ], string='Detay Seviyesi', default='monthly')
+    
+    selected_month = fields.Char(string='Seçilen Ay', help="Drill-down için seçilen ay (YYYY-MM)")
+    selected_date = fields.Date(string='Seçilen Gün', help="Drill-down için seçilen tarih")
+    selected_category_id = fields.Many2one('product.category', string='Seçilen Kategori')
+    
+    # Navigation breadcrumb için
+    breadcrumb_text = fields.Char(string='Breadcrumb', compute='_compute_breadcrumb')
+
     # === Rapor sonucu ===
     excel_file = fields.Binary(string='Excel File')
     excel_filename = fields.Char(string='Excel Filename')
@@ -57,6 +71,16 @@ class MedicalConsumablesSalesReport(models.TransientModel):
         'medical.consumables.sales.report.line',
         'report_id',
         string='Report Lines'
+    )
+    daily_lines = fields.One2many(
+        'medical.consumables.sales.daily.line',
+        'report_id',
+        string='Daily Report Lines'
+    )
+    invoice_lines = fields.One2many(
+        'medical.consumables.sales.invoice.line',
+        'report_id',
+        string='Invoice Report Lines'
     )
 
     # ---------------------------- Helpers ----------------------------
