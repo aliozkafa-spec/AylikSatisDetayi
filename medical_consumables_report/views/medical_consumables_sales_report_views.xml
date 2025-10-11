@@ -199,19 +199,19 @@
     </record>
 
     <!-- Wizard Action -->
-    <record id="action_medical_consumables_sales_report" model="ir.actions.act_window">
-        <field name="name">Kategori/Ürün Satış Raporu</field>
-        <field name="res_model">medical.consumables.sales.report</field>
+    <record id="action_monthly_sales_detail_report" model="ir.actions.act_window">
+        <field name="name">Aylık Satış Detay Rapor</field>
+        <field name="res_model">monthly.sales.detail.report</field>
         <field name="view_mode">form</field>
         <field name="target">new</field>
         <field name="context">{}</field>
     </record>
 
     <!-- Menu Item -->
-    <menuitem id="menu_medical_consumables_sales_report"
-              name="Kategori/Ürün Satış Raporu"
+    <menuitem id="menu_monthly_sales_detail_report"
+              name="Aylık Satış Detay Rapor"
               parent="account.menu_finance_reports"
-              action="action_medical_consumables_sales_report"
+              action="action_monthly_sales_detail_report"
               sequence="50"/>
 
 </odoo>
