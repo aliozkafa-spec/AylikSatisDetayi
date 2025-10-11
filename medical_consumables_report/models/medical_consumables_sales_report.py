@@ -465,7 +465,7 @@ class MonthlySalesDetailReport(models.TransientModel):
         return {
             'type': 'ir.actions.act_window',
             'name': f'Fatura Detayları - {date}',
-            'res_model': 'medical.consumables.sales.report',
+            'res_model': 'monthly.sales.detail.report',
             'res_id': self.id,
             'view_mode': 'form',
             'target': 'new',
