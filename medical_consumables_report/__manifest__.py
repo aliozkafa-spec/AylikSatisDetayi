@@ -64,7 +64,7 @@ Gereksinimler:
     },
     'data': [
         'security/ir.model.access.csv',
-        'views/medical_consumables_sales_report_views.xml',
+        'views/monthly_sales_detail_report_views.xml',
     ],
     'demo': [],
     'installable': True,
