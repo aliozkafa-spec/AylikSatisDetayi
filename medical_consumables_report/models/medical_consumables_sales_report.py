@@ -455,7 +455,7 @@ class MonthlySalesDetailReport(models.TransientModel):
             })
         
         if line_vals:
-            self.env['medical.consumables.sales.invoice.line'].create(line_vals)
+            self.env['monthly.sales.detail.invoice.line'].create(line_vals)
         
         # Navigation state'i güncelle
         self.detail_level = 'invoice'
