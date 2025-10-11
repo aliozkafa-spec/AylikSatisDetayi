@@ -208,6 +208,165 @@ class MedicalConsumablesSalesReport(models.TransientModel):
         _logger.info("DEBUG: Rapor ay sayısı: %s", len(report_data))
         return report_data
 
+    def _get_daily_data(self, selected_month, selected_category_id=None):
+        """Seçilen ay için günlük satış verilerini döndürür"""
+        self.ensure_one()
+        
+        # Ay başlangıç ve bitiş tarihleri
+        year, month = selected_month.split('-')
+        date_from = fields.Date.from_string(f"{year}-{month}-01")
+        
+        # Ay sonunu hesapla
+        if int(month) == 12:
+            next_month_first = fields.Date.from_string(f"{int(year)+1}-01-01")
+        else:
+            next_month_first = fields.Date.from_string(f"{year}-{int(month)+1:02d}-01")
+        
+        from datetime import timedelta
+        date_to = next_month_first - timedelta(days=1)
+        
+        categories = self._get_selected_categories()
+        if selected_category_id:
+            categories = categories.filtered(lambda c: c.id == selected_category_id)
+        
+        products = self.product_ids or self.env['product.product'].search([
+            ('categ_id', 'in', categories.ids),
+            ('active', '=', True),
+        ])
+        
+        # Account Move Line domain - günlük analiz için
+        domain = [
+            ('move_id.move_type', 'in', ['out_invoice', 'out_refund']),
+            ('move_id.state', '=', 'posted'),
+            ('product_id', 'in', products.ids),
+            ('date', '>=', date_from),
+            ('date', '<=', date_to),
+            ('account_id.account_type', 'in', ['income', 'other_income']),
+        ]
+        
+        move_lines = self.env['account.move.line'].search(domain)
+        _logger.info(f"DEBUG: {selected_month} ayı için {len(move_lines)} fatura satırı bulundu")
+        
+        daily_data = {}
+        
+        for line in move_lines:
+            # Tarih anahtarı
+            date_key = line.date
+            
+            # Kategori
+            category = line.product_id.categ_id
+            
+            # Tutarı hedef para birimine çevir
+            if line.currency_id:
+                src_amount = line.amount_currency
+                src_currency = line.currency_id
+            else:
+                src_amount = line.balance
+                src_currency = line.company_currency_id or line.company_id.currency_id
+            
+            amount = src_currency._convert(src_amount, self.currency_id, line.company_id, line.date)
+            amount = abs(amount)
+            
+            # Gün düğümü
+            if date_key not in daily_data:
+                daily_data[date_key] = {}
+            
+            # Kategori düğümü
+            if category.id not in daily_data[date_key]:
+                daily_data[date_key][category.id] = {
+                    'category_name': category.name,
+                    'total_amount': 0.0,
+                    'invoice_count': 0,
+                    'invoices': set()
+                }
+            
+            daily_data[date_key][category.id]['total_amount'] += amount
+            daily_data[date_key][category.id]['invoices'].add(line.move_id.id)
+        
+        # Fatura sayılarını hesapla
+        for date_key in daily_data:
+            for category_id in daily_data[date_key]:
+                daily_data[date_key][category_id]['invoice_count'] = len(daily_data[date_key][category_id]['invoices'])
+                # Set'i kaldır, ihtiyacımız yok
+                del daily_data[date_key][category_id]['invoices']
+        
+        return daily_data
+
+    def _get_invoice_data(self, selected_date, selected_category_id=None):
+        """Seçilen tarih için fatura detaylarını döndürür"""
+        self.ensure_one()
+        
+        categories = self._get_selected_categories()
+        if selected_category_id:
+            categories = categories.filtered(lambda c: c.id == selected_category_id)
+        
+        products = self.product_ids or self.env['product.product'].search([
+            ('categ_id', 'in', categories.ids),
+            ('active', '=', True),
+        ])
+        
+        # Fatura bazlı domain
+        domain = [
+            ('move_type', 'in', ['out_invoice', 'out_refund']),
+            ('state', '=', 'posted'),
+            ('invoice_date', '=', selected_date),
+        ]
+        
+        invoices = self.env['account.move'].search(domain)
+        
+        invoice_data = []
+        
+        for invoice in invoices:
+            # Bu faturada ilgili kategorilerdeki ürünler var mı kontrol et
+            relevant_lines = invoice.invoice_line_ids.filtered(
+                lambda l: l.product_id.id in products.ids
+            )
+            
+            if not relevant_lines:
+                continue
+            
+            # Fatura seviyesinde bilgiler
+            invoice_info = {
+                'invoice_id': invoice.id,
+                'invoice_name': invoice.name,
+                'invoice_date': invoice.invoice_date,
+                'partner_name': invoice.partner_id.name,
+                'salesman_name': invoice.user_id.name if invoice.user_id else 'Belirtilmemiş',
+                'amount_total': invoice.amount_total,
+                'amount_tax': invoice.amount_tax,
+                'amount_untaxed': invoice.amount_untaxed,
+                'payment_state': dict(invoice._fields['payment_state']._description_selection(self.env)).get(invoice.payment_state, invoice.payment_state),
+                'currency_name': invoice.currency_id.name,
+                'lines': []
+            }
+            
+            # Fatura satırları detayı
+            for line in relevant_lines:
+                # Maliyet bilgisi için standard_price kullan
+                cost_price = line.product_id.standard_price or 0.0
+                total_cost = cost_price * line.quantity
+                margin = line.price_subtotal - total_cost
+                margin_percent = (margin / line.price_subtotal * 100) if line.price_subtotal else 0.0
+                
+                line_info = {
+                    'product_name': line.product_id.name,
+                    'product_code': line.product_id.default_code or '',
+                    'category_name': line.product_id.categ_id.name,
+                    'quantity': line.quantity,
+                    'price_unit': line.price_unit,
+                    'price_subtotal': line.price_subtotal,
+                    'cost_price': cost_price,
+                    'total_cost': total_cost,
+                    'margin': margin,
+                    'margin_percent': margin_percent,
+                }
+                
+                invoice_info['lines'].append(line_info)
+            
+            invoice_data.append(invoice_info)
+        
+        return invoice_data
+
     # ---------------------------- Actions ----------------------------
     def generate_report(self):
         """Raporu oluşturur, satırları yazar, Excel üretir ve wizard'ı açık tutar."""
