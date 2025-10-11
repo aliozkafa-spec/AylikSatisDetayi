@@ -513,8 +513,13 @@ class MedicalConsumablesSalesReport(models.TransientModel):
             'target': 'new',
         }
 
-    def open_invoice(self, invoice_id):
+    def open_invoice(self):
         """Seçilen faturayı Odoo'da açar"""
+        invoice_id = self.env.context.get('default_invoice_id')
+        
+        if not invoice_id:
+            raise UserError("Fatura ID eksik!")
+        
         return {
             'type': 'ir.actions.act_window',
             'name': 'Fatura Detayı',
