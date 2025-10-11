@@ -402,7 +402,7 @@ class MonthlySalesDetailReport(models.TransientModel):
                 })
         
         if line_vals:
-            self.env['medical.consumables.sales.daily.line'].create(line_vals)
+            self.env['monthly.sales.detail.daily.line'].create(line_vals)
         
         # Navigation state'i güncelle
         self.detail_level = 'daily'
