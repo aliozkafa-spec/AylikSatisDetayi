@@ -23,6 +23,7 @@
         <field name="arch" type="xml">
             <tree>
                 <field name="date" string="Tarih"/>
+                <field name="category_id" invisible="1"/>
                 <field name="category_name" string="Kategori"/>
                 <field name="total_amount" string="Toplam Tutar" sum="Genel Toplam"/>
                 <field name="invoice_count" string="Fatura Sayısı" sum="Toplam Fatura"/>
