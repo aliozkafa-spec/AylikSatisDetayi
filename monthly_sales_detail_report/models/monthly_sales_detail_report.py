@@ -646,6 +646,10 @@ class MonthlySalesDetailReportLine(models.TransientModel):
     amount = fields.Float(string='Amount')
     is_category_total = fields.Boolean(string='Is Category Total')
 
+    def drill_down_to_daily(self):
+        """Report line'dan ana report metodunu çağır"""
+        return self.report_id.drill_down_to_daily()
+
 
 class MonthlySalesDetailDailyLine(models.TransientModel):
     _name = 'monthly.sales.detail.daily.line'
