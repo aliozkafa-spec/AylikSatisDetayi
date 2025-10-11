@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_medical_consumables_sales_report_user,medical.consumables.sales.report.user,model_medical_consumables_sales_report,account.group_account_user,1,1,1,1
+access_medical_consumables_sales_report_manager,medical.consumables.sales.report.manager,model_medical_consumables_sales_report,account.group_account_manager,1,1,1,1
+access_medical_consumables_sales_report_line_user,medical.consumables.sales.report.line.user,model_medical_consumables_sales_report_line,account.group_account_user,1,1,1,1
+access_medical_consumables_sales_report_line_manager,medical.consumables.sales.report.line.manager,model_medical_consumables_sales_report_line,account.group_account_manager,1,1,1,1

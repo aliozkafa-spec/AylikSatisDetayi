@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Report Line Tree View -->
+    <record id="medical_consumables_sales_report_line_tree" model="ir.ui.view">
+        <field name="name">medical.consumables.sales.report.line.tree</field>
+        <field name="model">medical.consumables.sales.report.line</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="month"/>
+                <field name="category_name"/>
+                <field name="product_name"/>
+                <field name="amount" sum="Toplam"/>
+                <field name="is_category_total" invisible="1"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Main Report Form View -->
+    <record id="medical_consumables_sales_report_form" model="ir.ui.view">
+        <field name="name">medical.consumables.sales.report.form</field>
+        <field name="model">medical.consumables.sales.report</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="generate_report" 
+                            string="Rapor Oluştur" 
+                            type="object" 
+                            class="oe_highlight"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>İki Tarih Aralığında Kategori veya Ürün Bazında Satış Raporu</h1>
+                    </div>
+                    
+                    <group>
+                        <group name="date_filters" string="Tarih Filtreleri">
+                            <field name="date_from" string="Başlangıç Tarihi"/>
+                            <field name="date_to" string="Bitiş Tarihi"/>
+                        </group>
+                        <group name="other_filters" string="Diğer Filtreler">
+                            <field name="currency_id" string="Hedef Para Birimi"/>
+                            <field name="include_subcategories" string="Alt Kategorileri Dahil Et"/>
+                        </group>
+                    </group>
+                    
+                    <group>
+                        <group name="category_filters" string="Kategori Filtreleri">
+                            <field name="category_ids" 
+                                   widget="many2many_tags"
+                                   placeholder="Tüm kategoriler için boş bırakın"/>
+                        </group>
+                        <group name="product_filters" string="Ürün Filtreleri">
+                            <field name="product_ids" 
+                                   widget="many2many_tags"
+                                   placeholder="İsteğe bağlı: Ayrı analiz edilecek ürünleri seçin"/>
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="Rapor Sonuçları" attrs="{'invisible': [('report_lines', '=', [])]}">
+                            <field name="report_lines">
+                                <tree decoration-bf="is_category_total == True">
+                                    <field name="month" string="Ay"/>
+                                    <field name="category_name" string="Kategori"/>
+                                    <field name="product_name" string="Ürün"/>
+                                    <field name="amount" sum="Toplam" string="Tutar"/>
+                                    <field name="is_category_total" invisible="1"/>
+                                </tree>
+                            </field>
+                        </page>
+                        
+                        <page string="Excel İndir" attrs="{'invisible': [('excel_file', '=', False)]}">
+                            <group>
+                                <field name="excel_filename" invisible="1"/>
+                                <field name="excel_file" 
+                                       filename="excel_filename"
+                                       widget="binary"
+                                       string="Excel Dosyası"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Wizard Action -->
+    <record id="action_medical_consumables_sales_report" model="ir.actions.act_window">
+        <field name="name">Kategori/Ürün Satış Raporu</field>
+        <field name="res_model">medical.consumables.sales.report</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{}</field>
+    </record>
+
+    <!-- Menu Item -->
+    <menuitem id="menu_medical_consumables_sales_report"
+              name="Kategori/Ürün Satış Raporu"
+              parent="account.menu_finance_reports"
+              action="action_medical_consumables_sales_report"
+              sequence="50"/>
+
+</odoo>
