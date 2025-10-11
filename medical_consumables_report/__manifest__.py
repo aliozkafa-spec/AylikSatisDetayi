@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 {
-    'name': 'İki Tarih Aralığında Kategori veya Ürün Bazında Satış Raporu',
-    'version': '16.0.1.0.0',
+    'name': 'Aylık Satış Detay Rapor',
+    'version': '16.0.2.0.0',
     'category': 'Accounting/Reporting',
-    'summary': 'İki Tarih Aralığında Kategori veya Ürün Bazında Detaylı Satış Analiz Raporu',
+    'summary': 'Aylık Satış Detay Raporu - Kategori, Ürün, Günlük ve Fatura Detayları',
     'description': """
-İki Tarih Aralığında Kategori veya Ürün Bazında Satış Raporu
-========================================================
+Aylık Satış Detay Rapor
+=======================
 
-Bu modül Odoo 16 Community Edition için tasarlanmış, seçilen tarih aralığında kategori ve ürün bazında 
-detaylı satış raporları oluşturan kapsamlı bir raporlama sistemidir.
+Bu modül Odoo 16 Community Edition için tasarlanmış, aylık satış detaylarını 3 seviyeli drill-down 
+sistemi ile analiz eden kapsamlı bir raporlama sistemidir.
 
 Temel Özellikler:
 * Aylık satış analizi (tarih aralığı seçilebilir)
