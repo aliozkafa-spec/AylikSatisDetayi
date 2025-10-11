@@ -68,17 +68,17 @@ class MonthlySalesDetailReport(models.TransientModel):
     excel_file = fields.Binary(string='Excel File')
     excel_filename = fields.Char(string='Excel Filename')
     report_lines = fields.One2many(
-        'medical.consumables.sales.report.line',
+        'monthly.sales.detail.report.line',
         'report_id',
         string='Report Lines'
     )
     daily_lines = fields.One2many(
-        'medical.consumables.sales.daily.line',
+        'monthly.sales.detail.daily.line',
         'report_id',
         string='Daily Report Lines'
     )
     invoice_lines = fields.One2many(
-        'medical.consumables.sales.invoice.line',
+        'monthly.sales.detail.invoice.line',
         'report_id',
         string='Invoice Report Lines'
     )
