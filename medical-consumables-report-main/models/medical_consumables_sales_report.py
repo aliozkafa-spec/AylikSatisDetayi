@@ -83,6 +83,22 @@ class MedicalConsumablesSalesReport(models.TransientModel):
         string='Invoice Report Lines'
     )
 
+    # === Computed Fields ===
+    @api.depends('detail_level', 'selected_month', 'selected_date', 'selected_category_id')
+    def _compute_breadcrumb(self):
+        """Navigasyon için breadcrumb hesaplar"""
+        for record in self:
+            breadcrumb = "Ana Rapor"
+            if record.detail_level == 'daily' and record.selected_month:
+                breadcrumb += f" > {record.selected_month} Detayları"
+                if record.selected_category_id:
+                    breadcrumb += f" > {record.selected_category_id.name}"
+            elif record.detail_level == 'invoice' and record.selected_date:
+                breadcrumb += f" > {record.selected_month} > {record.selected_date.strftime('%d.%m.%Y')} Faturaları"
+                if record.selected_category_id:
+                    breadcrumb += f" > {record.selected_category_id.name}"
+            record.breadcrumb_text = breadcrumb
+
     # ---------------------------- Helpers ----------------------------
     def _get_selected_categories(self):
         """Seçilen kategorileri döndürür. Alt kategoriler açıksa child_of ile genişletir.
