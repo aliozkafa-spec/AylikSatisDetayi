@@ -10,9 +10,9 @@ import logging
 _logger = logging.getLogger(__name__)
 
 
-class MedicalConsumablesSalesReport(models.TransientModel):
-    _name = 'medical.consumables.sales.report'
-    _description = 'İki Tarih Aralığında Kategori veya Ürün Bazında Satış Raporu'
+class MonthlySalesDetailReport(models.TransientModel):
+    _name = 'monthly.sales.detail.report'
+    _description = 'Aylık Satış Detay Rapor'
 
     # === Filtre alanları ===
     date_from = fields.Date(
