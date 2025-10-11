@@ -368,9 +368,16 @@ class MedicalConsumablesSalesReport(models.TransientModel):
         return invoice_data
 
     # ---------------------------- Navigation Actions ----------------------------
-    def drill_down_to_daily(self, month, category_id=None):
+    def drill_down_to_daily(self):
         """Aylık raporu günlük detaya açar"""
         self.ensure_one()
+        
+        # Context'ten parametreleri al
+        month = self.env.context.get('default_month')
+        category_id = self.env.context.get('default_category_id')
+        
+        if not month:
+            raise UserError("Ay bilgisi eksik!")
         
         # Mevcut satırları temizle
         if self.daily_lines:
