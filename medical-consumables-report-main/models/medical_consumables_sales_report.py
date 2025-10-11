@@ -367,6 +367,149 @@ class MedicalConsumablesSalesReport(models.TransientModel):
         
         return invoice_data
 
+    # ---------------------------- Navigation Actions ----------------------------
+    def drill_down_to_daily(self, month, category_id=None):
+        """Aylık raporu günlük detaya açar"""
+        self.ensure_one()
+        
+        # Mevcut satırları temizle
+        if self.daily_lines:
+            self.daily_lines.unlink()
+        if self.invoice_lines:
+            self.invoice_lines.unlink()
+        
+        # Günlük verileri getir
+        daily_data = self._get_daily_data(month, category_id)
+        
+        # Günlük satırları oluştur
+        line_vals = []
+        for date, categories in sorted(daily_data.items()):
+            for cat_id, cat_data in categories.items():
+                line_vals.append({
+                    'report_id': self.id,
+                    'date': date,
+                    'category_id': cat_id,
+                    'category_name': cat_data['category_name'],
+                    'total_amount': cat_data['total_amount'],
+                    'invoice_count': cat_data['invoice_count'],
+                })
+        
+        if line_vals:
+            self.env['medical.consumables.sales.daily.line'].create(line_vals)
+        
+        # Navigation state'i güncelle
+        self.detail_level = 'daily'
+        self.selected_month = month
+        self.selected_category_id = category_id
+        
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Günlük Detaylar - {month}',
+            'res_model': 'medical.consumables.sales.report',
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }
+
+    def drill_down_to_invoices(self, date, category_id=None):
+        """Günlük raporu fatura detaya açar"""
+        self.ensure_one()
+        
+        # Mevcut fatura satırlarını temizle
+        if self.invoice_lines:
+            self.invoice_lines.unlink()
+        
+        # Fatura verilerini getir
+        invoice_data = self._get_invoice_data(date, category_id)
+        
+        # Fatura satırları oluştur
+        line_vals = []
+        for invoice_info in invoice_data:
+            line_vals.append({
+                'report_id': self.id,
+                'invoice_id': invoice_info['invoice_id'],
+                'invoice_name': invoice_info['invoice_name'],
+                'invoice_date': invoice_info['invoice_date'],
+                'partner_name': invoice_info['partner_name'],
+                'salesman_name': invoice_info['salesman_name'],
+                'amount_total': invoice_info['amount_total'],
+                'amount_tax': invoice_info['amount_tax'],
+                'amount_untaxed': invoice_info['amount_untaxed'],
+                'payment_state': invoice_info['payment_state'],
+                'currency_name': invoice_info['currency_name'],
+                'product_lines_json': str(invoice_info['lines']),  # JSON string olarak sakla
+            })
+        
+        if line_vals:
+            self.env['medical.consumables.sales.invoice.line'].create(line_vals)
+        
+        # Navigation state'i güncelle
+        self.detail_level = 'invoice'
+        self.selected_date = date
+        self.selected_category_id = category_id
+        
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Fatura Detayları - {date}',
+            'res_model': 'medical.consumables.sales.report',
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }
+
+    def back_to_monthly(self):
+        """Ana aylık rapora geri dön"""
+        self.ensure_one()
+        self.detail_level = 'monthly'
+        self.selected_month = False
+        self.selected_date = False
+        self.selected_category_id = False
+        
+        # Detail satırlarını temizle
+        if self.daily_lines:
+            self.daily_lines.unlink()
+        if self.invoice_lines:
+            self.invoice_lines.unlink()
+        
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Ana Rapor',
+            'res_model': 'medical.consumables.sales.report',
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }
+
+    def back_to_daily(self):
+        """Fatura detayından günlük detaya geri dön"""
+        self.ensure_one()
+        self.detail_level = 'daily'
+        self.selected_date = False
+        
+        # Fatura satırlarını temizle
+        if self.invoice_lines:
+            self.invoice_lines.unlink()
+        
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Günlük Detaylar - {self.selected_month}',
+            'res_model': 'medical.consumables.sales.report',
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }
+
+    def open_invoice(self, invoice_id):
+        """Seçilen faturayı Odoo'da açar"""
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Fatura Detayı',
+            'res_model': 'account.move',
+            'res_id': invoice_id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
+
     # ---------------------------- Actions ----------------------------
     def generate_report(self):
         """Raporu oluşturur, satırları yazar, Excel üretir ve wizard'ı açık tutar."""
