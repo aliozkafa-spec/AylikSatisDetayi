@@ -2,9 +2,9 @@
 <odoo>
     
     <!-- Report Line Tree View -->
-    <record id="medical_consumables_sales_report_line_tree" model="ir.ui.view">
-        <field name="name">medical.consumables.sales.report.line.tree</field>
-        <field name="model">medical.consumables.sales.report.line</field>
+    <record id="monthly_sales_detail_report_line_tree" model="ir.ui.view">
+        <field name="name">monthly.sales.detail.report.line.tree</field>
+        <field name="model">monthly.sales.detail.report.line</field>
         <field name="arch" type="xml">
             <tree>
                 <field name="month"/>
