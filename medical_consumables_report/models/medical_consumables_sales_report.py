@@ -667,12 +667,12 @@ class MonthlySalesDetailDailyLine(models.TransientModel):
         return self.report_id.drill_down_to_invoices()
 
 
-class MedicalConsumablesSalesInvoiceLine(models.TransientModel):
-    _name = 'medical.consumables.sales.invoice.line'
-    _description = 'Fatura Detay Raporu Satırı'
+class MonthlySalesDetailInvoiceLine(models.TransientModel):
+    _name = 'monthly.sales.detail.invoice.line'
+    _description = 'Aylık Satış - Fatura Detay Satırı'
 
     report_id = fields.Many2one(
-        'medical.consumables.sales.report',
+        'monthly.sales.detail.report',
         string='Report',
         ondelete='cascade'
     )
