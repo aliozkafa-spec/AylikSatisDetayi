@@ -1,8 +1,8 @@
-# İki Tarih Aralığında Kategori veya Ürün Bazında Satış Raporu - Odoo 16 Module
+# Aylık Satış Detay Rapor - Odoo 16 Module
 
 ## 📋 Proje Açıklaması
 
-Bu modül Odoo 16 Community Edition için tasarlanmış, seçilen tarih aralığında kategori ve ürün bazında detaylı satış raporları oluşturan kapsamlı bir raporlama sistemidir.
+Bu modül Odoo 16 Community Edition için tasarlanmış, aylık satış detaylarını 3 seviyeli drill-down sistemi ile analiz eden kapsamlı bir raporlama sistemidir.
 
 ## 🚀 Özellikler
 
