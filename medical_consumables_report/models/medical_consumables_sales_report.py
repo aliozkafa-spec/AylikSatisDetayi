@@ -631,12 +631,12 @@ class MonthlySalesDetailReport(models.TransientModel):
         self.excel_filename = filename
 
 
-class MedicalConsumablesSalesReportLine(models.TransientModel):
-    _name = 'medical.consumables.sales.report.line'
-    _description = 'İki Tarih Aralığında Kategori veya Ürün Bazında Satış Raporu Line'
+class MonthlySalesDetailReportLine(models.TransientModel):
+    _name = 'monthly.sales.detail.report.line'
+    _description = 'Aylık Satış Detay Rapor Satırı'
 
     report_id = fields.Many2one(
-        'medical.consumables.sales.report',
+        'monthly.sales.detail.report',
         string='Report',
         ondelete='cascade'
     )
