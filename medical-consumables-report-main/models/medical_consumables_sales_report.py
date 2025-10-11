@@ -687,3 +687,7 @@ class MedicalConsumablesSalesInvoiceLine(models.TransientModel):
     payment_state = fields.Char(string='Ödeme Durumu')
     currency_name = fields.Char(string='Para Birimi')
     product_lines_json = fields.Text(string='Ürün Satırları (JSON)')
+
+    def open_invoice(self):
+        """Faturayı Odoo'da aç"""
+        return self.report_id.open_invoice()
