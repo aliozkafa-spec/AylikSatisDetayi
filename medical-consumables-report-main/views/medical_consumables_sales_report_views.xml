@@ -16,6 +16,49 @@
         </field>
     </record>
 
+    <!-- Daily Report Tree View -->
+    <record id="medical_consumables_sales_daily_line_tree" model="ir.ui.view">
+        <field name="name">medical.consumables.sales.daily.line.tree</field>
+        <field name="model">medical.consumables.sales.daily.line</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="date" string="Tarih"/>
+                <field name="category_name" string="Kategori"/>
+                <field name="total_amount" string="Toplam Tutar" sum="Genel Toplam"/>
+                <field name="invoice_count" string="Fatura Sayısı" sum="Toplam Fatura"/>
+                <button name="drill_down_to_invoices" 
+                        string="Faturaları Gör" 
+                        type="object" 
+                        class="oe_link"
+                        context="{'default_date': date, 'default_category_id': category_id}"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Invoice Report Tree View -->
+    <record id="medical_consumables_sales_invoice_line_tree" model="ir.ui.view">
+        <field name="name">medical.consumables.sales.invoice.line.tree</field>
+        <field name="model">medical.consumables.sales.invoice.line</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="invoice_name" string="Fatura No"/>
+                <field name="invoice_date" string="Tarih"/>
+                <field name="partner_name" string="Müşteri"/>
+                <field name="salesman_name" string="Satış Temsilcisi"/>
+                <field name="amount_untaxed" string="Vergi Hariç" sum="Toplam"/>
+                <field name="amount_tax" string="Vergi" sum="Toplam Vergi"/>
+                <field name="amount_total" string="Genel Toplam" sum="Genel Toplam"/>
+                <field name="payment_state" string="Ödeme Durumu"/>
+                <field name="currency_name" string="Para Birimi"/>
+                <button name="open_invoice" 
+                        string="Faturayı Aç" 
+                        type="object" 
+                        class="oe_link"
+                        context="{'default_invoice_id': invoice_id}"/>
+            </tree>
+        </field>
+    </record>
+
     <!-- Main Report Form View -->
     <record id="medical_consumables_sales_report_form" model="ir.ui.view">
         <field name="name">medical.consumables.sales.report.form</field>
@@ -26,14 +69,28 @@
                     <button name="generate_report" 
                             string="Rapor Oluştur" 
                             type="object" 
-                            class="oe_highlight"/>
+                            class="oe_highlight"
+                            attrs="{'invisible': [('detail_level', '!=', 'monthly')]}"/>
+                    <button name="back_to_monthly" 
+                            string="Ana Rapora Dön" 
+                            type="object" 
+                            class="oe_highlight"
+                            attrs="{'invisible': [('detail_level', '=', 'monthly')]}"/>
+                    <button name="back_to_daily" 
+                            string="Günlük Detaya Dön" 
+                            type="object"
+                            attrs="{'invisible': [('detail_level', '!=', 'invoice')]}"/>
+                    <field name="detail_level" invisible="1"/>
                 </header>
                 <sheet>
                     <div class="oe_title">
                         <h1>İki Tarih Aralığında Kategori veya Ürün Bazında Satış Raporu</h1>
+                        <h2 attrs="{'invisible': [('breadcrumb_text', '=', False)]}">
+                            <field name="breadcrumb_text" readonly="1" nolabel="1"/>
+                        </h2>
                     </div>
                     
-                    <group>
+                    <group attrs="{'invisible': [('detail_level', '!=', 'monthly')]}">
                         <group name="date_filters" string="Tarih Filtreleri">
                             <field name="date_from" string="Başlangıç Tarihi"/>
                             <field name="date_to" string="Bitiş Tarihi"/>
@@ -44,7 +101,7 @@
                         </group>
                     </group>
                     
-                    <group>
+                    <group attrs="{'invisible': [('detail_level', '!=', 'monthly')]}">
                         <group name="category_filters" string="Kategori Filtreleri">
                             <field name="category_ids" 
                                    widget="many2many_tags"
@@ -57,8 +114,17 @@
                         </group>
                     </group>
                     
+                    <!-- Navigation hidden fields -->
+                    <group invisible="1">
+                        <field name="selected_month"/>
+                        <field name="selected_date"/>
+                        <field name="selected_category_id"/>
+                    </group>
+                    
                     <notebook>
-                        <page string="Rapor Sonuçları" attrs="{'invisible': [('report_lines', '=', [])]}">
+                        <!-- Aylık Rapor Sonuçları -->
+                        <page string="Rapor Sonuçları" 
+                              attrs="{'invisible': ['|', ('report_lines', '=', []), ('detail_level', '!=', 'monthly')]}">
                             <field name="report_lines">
                                 <tree decoration-bf="is_category_total == True">
                                     <field name="month" string="Ay"/>
@@ -66,6 +132,53 @@
                                     <field name="product_name" string="Ürün"/>
                                     <field name="amount" sum="Toplam" string="Tutar"/>
                                     <field name="is_category_total" invisible="1"/>
+                                    <button name="drill_down_to_daily" 
+                                            string="Bu Ayın Detayları" 
+                                            type="object" 
+                                            class="oe_link"
+                                            attrs="{'invisible': [('is_category_total', '=', False)]}"
+                                            context="{'default_month': month, 'default_category_id': False}"/>
+                                </tree>
+                            </field>
+                        </page>
+                        
+                        <!-- Günlük Detaylar -->
+                        <page string="Günlük Detaylar" 
+                              attrs="{'invisible': ['|', ('daily_lines', '=', []), ('detail_level', '!=', 'daily')]}">
+                            <field name="daily_lines" widget="one2many_list">
+                                <tree>
+                                    <field name="date" string="Tarih"/>
+                                    <field name="category_name" string="Kategori"/>
+                                    <field name="total_amount" string="Toplam Tutar" sum="Genel Toplam"/>
+                                    <field name="invoice_count" string="Fatura Sayısı" sum="Toplam Fatura"/>
+                                    <button name="drill_down_to_invoices" 
+                                            string="Bu Günün Faturalarını Gör" 
+                                            type="object" 
+                                            class="oe_link"
+                                            context="{'default_date': date, 'default_category_id': category_id}"/>
+                                </tree>
+                            </field>
+                        </page>
+                        
+                        <!-- Fatura Detayları -->
+                        <page string="Fatura Detayları" 
+                              attrs="{'invisible': ['|', ('invoice_lines', '=', []), ('detail_level', '!=', 'invoice')]}">
+                            <field name="invoice_lines" widget="one2many_list">
+                                <tree>
+                                    <field name="invoice_name" string="Fatura No"/>
+                                    <field name="invoice_date" string="Tarih"/>
+                                    <field name="partner_name" string="Müşteri"/>
+                                    <field name="salesman_name" string="Satış Temsilcisi"/>
+                                    <field name="amount_untaxed" string="Vergi Hariç" sum="Toplam"/>
+                                    <field name="amount_tax" string="Vergi" sum="Toplam Vergi"/>
+                                    <field name="amount_total" string="Genel Toplam" sum="Genel Toplam"/>
+                                    <field name="payment_state" string="Ödeme Durumu"/>
+                                    <field name="currency_name" string="Para Birimi"/>
+                                    <button name="open_invoice" 
+                                            string="Faturayı Odoo'da Aç" 
+                                            type="object" 
+                                            class="oe_link"
+                                            context="{'default_invoice_id': invoice_id}"/>
                                 </tree>
                             </field>
                         </page>
