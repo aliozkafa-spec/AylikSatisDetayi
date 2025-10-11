@@ -1,0 +1,67 @@
+name: Normalize quotes & punctuation
+on:
+  push:
+    paths: ['**/*.py','**/*.php','**/*.js','**/*.ts','**/*.json','**/*.md','**/*.txt','**/*.html','**/*.htm','**/*.css','**/*.xml','**/*.yml','**/*.yaml']
+  pull_request:
+    paths: ['**/*.py','**/*.php','**/*.js','**/*.ts','**/*.json','**/*.md','**/*.txt','**/*.html','**/*.htm','**/*.css','**/*.xml','**/*.yml','**/*.yaml']
+  workflow_dispatch:
+jobs:
+  normalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Write fixer script
+        run: |
+          cat > fix_quotes.py <<'PY'
+          #!/usr/bin/env python3
+          # -*- coding: utf-8 -*-
+          import sys
+          from pathlib import Path
+          MAP = {""": '"', """: '"', """: '"', """: '"', """: '"', "'": "'", "'": "'", "'": "'", "'": "'", "'": "'", "-": "-", "-": "-", "*": "*", "...": "...", "\u00A0": " "}
+          def fix_text(s): 
+              for k,v in MAP.items(): s = s.replace(k, v)
+              return s
+          def main(paths):
+              changed=False
+              for p in paths:
+                  path=Path(p)
+                  if not path.is_file(): continue
+                  try: txt = path.read_text(encoding="utf-8")
+                  except Exception: continue
+                  fixed=fix_text(txt)
+                  if fixed!=txt:
+                      path.write_text(fixed, encoding="utf-8")
+                      changed=True
+              if not changed: print("No changes")
+          if __name__ == "__main__":
+              if len(sys.argv)==1: sys.exit(0)
+              main(sys.argv[1:])
+          PY
+          chmod +x fix_quotes.py
+      - name: Normalize files
+        run: |
+          set -euo pipefail
+          files="$(git ls-files | grep -Ei '\.(py|php|js|ts|json|md|txt|html?|css|xml|ya?ml)$' | grep -vi '\.min\.js$' || true)"
+          if [ -n "$files" ]; then
+            python3 fix_quotes.py $files
+          fi
+          if git diff --quiet; then
+            echo "SKIP_PR=true" >> $GITHUB_ENV
+          else
+            echo "SKIP_PR=false" >> $GITHUB_ENV
+          fi
+      - name: Create Pull Request with fixes
+        if: env.SKIP_PR == 'false'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: chore/normalize-quotes
+          commit-message: 'chore: normalize smart quotes & punctuation'
+          title: 'Normalize smart quotes & punctuation'
+          body: |
+            Automated normalization:
+            - Curly quotes → straight quotes
+            - Dashes (-, -) → '-'
+            - Ellipsis (...) → '...'
+            - NBSP → space
+          delete-branch: true

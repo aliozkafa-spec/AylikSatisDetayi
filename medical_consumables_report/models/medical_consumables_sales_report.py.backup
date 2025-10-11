@@ -1,0 +1,291 @@
+# -*- coding: utf-8 -*-
+
+from odoo import models, fields, api, _
+from odoo.exceptions import UserError
+import io
+import xlsxwriter
+import base64
+from datetime import datetime, date
+from dateutil.relativedelta import relativedelta
+
+class MedicalConsumablesSalesReport(models.TransientModel):
+_name = ‘medical.consumables.sales.report’
+_description = ‘İki Tarih Aralığında Kategori veya Ürün Bazında Satış Raporu’
+
+```
+# Filtre alanları
+date_from = fields.Date(
+    string='Start Date',
+    required=True,
+    default=lambda self: fields.Date.today().replace(day=1)
+)
+date_to = fields.Date(
+    string='End Date', 
+    required=True,
+    default=lambda self: fields.Date.today()
+)
+category_ids = fields.Many2many(
+    'product.category',
+    string='Product Categories',
+    domain="[]",
+    help="Boş bırakırsanız tüm kategoriler dahil edilir"
+)
+product_ids = fields.Many2many(
+    'product.product',
+    string='Specific Products',
+    help="Optional: Select specific products to analyze separately"
+)
+include_subcategories = fields.Boolean(
+    string='Include Subcategories',
+    default=True,
+    help="Include all subcategories of Medical Consumables"
+)
+currency_id = fields.Many2one(
+    'res.currency',
+    string='Target Currency',
+    default=lambda self: self.env.ref('base.USD'),
+    required=True
+)
+
+# Rapor sonucu
+excel_file = fields.Binary(string='Excel File')
+excel_filename = fields.Char(string='Excel Filename')
+report_lines = fields.One2many(
+    'medical.consumables.sales.report.line',
+    'report_id',
+    string='Report Lines'
+)
+
+def _get_selected_categories(self):
+    """Seçilen kategorileri ve alt kategorilerini getir - TÜM KATEGORİLER DESTEĞİ"""
+    
+    # Eğer kullanıcı belirli kategoriler seçmişse
+    if self.category_ids:
+        selected_categories = self.category_ids
+        
+        # Alt kategorileri de dahil et seçeneği aktifse
+        if self.include_subcategories:
+            all_categories = self.env['product.category']
+            for category in selected_categories:
+                # Bu kategorinin kendisi ve tüm alt kategorileri
+                subcategories = self.env['product.category'].search([
+                    ('parent_path', 'like', category.parent_path + '%')
+                ])
+                all_categories |= subcategories
+            return all_categories
+        else:
+            return selected_categories
+    
+    else:
+        # Hiçbir kategori seçilmemişse TÜM kategorileri getir
+        return self.env['product.category'].search([])
+
+def _get_report_data(self):
+    """Rapor verilerini hesapla"""
+    categories = self._get_selected_categories()
+    
+    if not categories:
+        raise UserError(_("No categories found matching your criteria."))
+
+    # Ürün IDs'lerini topla
+    product_ids = []
+    for category in categories:
+        category_products = self.env['product.product'].search([
+            ('categ_id', '=', category.id)
+        ])
+        product_ids.extend(category_products.ids)
+
+    if not product_ids:
+        raise UserError(_("No products found in the selected categories."))
+
+    # Ana sorgu - Account Move Line'dan veri çek
+    domain = [
+        ('move_id.move_type', '=', 'out_invoice'),
+        ('move_id.state', '=', 'posted'),
+        ('product_id', 'in', product_ids),
+        ('date', '>=', self.date_from),
+        ('date', '<=', self.date_to),
+        # Removed problematic field - using account type filter instead
+        ('account_id.account_type', 'in', ['income', 'income_other']),
+    ]
+
+    move_lines = self.env['account.move.line'].search(domain)
+    
+    # Veriyi organize et
+    report_data = {}
+    
+    for line in move_lines:
+        # Tarih bilgisi (YYYY-MM formatında)
+        month_key = line.date.strftime('%Y-%m')
+        
+        # Kategori bilgisi
+        category = line.product_id.categ_id
+        
+        # Tutar hesaplama - USD'ye çevir
+        if line.currency_id and line.currency_id != self.currency_id:
+            # Currency conversion
+            amount = line.currency_id._convert(
+                line.amount_currency or line.balance,
+                self.currency_id,
+                line.company_id,
+                line.date
+            )
+        else:
+            amount = line.amount_currency if line.currency_id else line.balance
+        
+        # Negatif tutarları pozitife çevir (satış faturaları için)
+        amount = abs(amount)
+        
+        # Data structure: {month: {category: {product: amount}}}
+        if month_key not in report_data:
+            report_data[month_key] = {}
+        
+        if category.id not in report_data[month_key]:
+            report_data[month_key][category.id] = {
+                'category_name': category.name,
+                'category_total': 0,
+                'products': {}
+            }
+        
+        # Kategori toplamını güncelle
+        report_data[month_key][category.id]['category_total'] += amount
+        
+        # Eğer belirli ürünler seçildiyse, onları ayrı göster
+        if self.product_ids and line.product_id.id in self.product_ids.ids:
+            product_key = line.product_id.id
+            if product_key not in report_data[month_key][category.id]['products']:
+                report_data[month_key][category.id]['products'][product_key] = {
+                    'product_name': line.product_id.name,
+                    'amount': 0
+                }
+            report_data[month_key][category.id]['products'][product_key]['amount'] += amount
+
+    return report_data
+
+def generate_report(self):
+    """Raporu oluştur"""
+    self.report_lines.unlink()  # Önceki sonuçları temizle
+    
+    report_data = self._get_report_data()
+    
+    # Report lines oluştur
+    line_vals = []
+    for month, categories in sorted(report_data.items()):
+        for category_id, category_data in categories.items():
+            # Kategori satırı
+            line_vals.append({
+                'report_id': self.id,
+                'month': month,
+                'category_name': category_data['category_name'],
+                'product_name': False,
+                'amount': category_data['category_total'],
+                'is_category_total': True,
+            })
+            
+            # Ürün satırları (eğer seçildiyse)
+            for product_id, product_data in category_data['products'].items():
+                line_vals.append({
+                    'report_id': self.id,
+                    'month': month,
+                    'category_name': category_data['category_name'],
+                    'product_name': product_data['product_name'],
+                    'amount': product_data['amount'],
+                    'is_category_total': False,
+                })
+    
+    if line_vals:
+        self.env['medical.consumables.sales.report.line'].create(line_vals)
+    
+    # Excel dosyası oluştur
+    self._generate_excel_report(report_data)
+    
+    return {
+        'type': 'ir.actions.act_window',
+        'name': 'İki Tarih Aralığında Kategori veya Ürün Bazında Satış Raporu',
+        'res_model': 'medical.consumables.sales.report',
+        'res_id': self.id,
+        'view_mode': 'form',
+        'target': 'new',
+    }
+
+def _generate_excel_report(self, report_data):
+    """Excel raporunu oluştur"""
+    output = io.BytesIO()
+    workbook = xlsxwriter.Workbook(output)
+    worksheet = workbook.add_worksheet('Kategori Urun Satis Raporu')
+
+    # Formatlar
+    header_format = workbook.add_format({
+        'bold': True,
+        'bg_color': '#D7E4BC',
+        'border': 1
+    })
+    category_format = workbook.add_format({
+        'bold': True,
+        'bg_color': '#F2F2F2',
+        'border': 1
+    })
+    product_format = workbook.add_format({
+        'border': 1,
+        'indent': 1
+    })
+    amount_format = workbook.add_format({
+        'num_format': '#,##0.00',
+        'border': 1
+    })
+
+    # Başlıklar
+    headers = ['Month', 'Category', 'Product', f'Total Sales ({self.currency_id.name})']
+    for col, header in enumerate(headers):
+        worksheet.write(0, col, header, header_format)
+
+    # Veri satırları
+    row = 1
+    for month in sorted(report_data.keys()):
+        for category_id, category_data in report_data[month].items():
+            # Kategori satırı
+            worksheet.write(row, 0, month, category_format)
+            worksheet.write(row, 1, category_data['category_name'], category_format)
+            worksheet.write(row, 2, 'TOTAL', category_format)
+            worksheet.write(row, 3, category_data['category_total'], category_format)
+            row += 1
+            
+            # Ürün satırları
+            for product_id, product_data in category_data['products'].items():
+                worksheet.write(row, 0, month, product_format)
+                worksheet.write(row, 1, category_data['category_name'], product_format)
+                worksheet.write(row, 2, product_data['product_name'], product_format)
+                worksheet.write(row, 3, product_data['amount'], amount_format)
+                row += 1
+
+    # Sütun genişliklerini ayarla
+    worksheet.set_column('A:A', 12)
+    worksheet.set_column('B:B', 25)
+    worksheet.set_column('C:C', 30)
+    worksheet.set_column('D:D', 15)
+
+    workbook.close()
+    output.seek(0)
+    
+    # Dosyayı kaydet
+    filename = f"kategori_urun_satis_raporu_{self.date_from}_{self.date_to}.xlsx"
+    self.excel_file = base64.b64encode(output.read())
+    self.excel_filename = filename
+```
+
+class MedicalConsumablesSalesReportLine(models.TransientModel):
+_name = ‘medical.consumables.sales.report.line’
+_description = ‘İki Tarih Aralığında Kategori veya Ürün Bazında Satış Raporu Line’
+
+```
+report_id = fields.Many2one(
+    'medical.consumables.sales.report',
+    string='Report',
+    ondelete='cascade'
+)
+month = fields.Char(string='Month')
+category_name = fields.Char(string='Category')
+product_name = fields.Char(string='Product')
+amount = fields.Float(string='Amount')
+is_category_total = fields.Boolean(string='Is Category Total')
+```
