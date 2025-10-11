@@ -12,13 +12,22 @@ Bu modül Odoo 16 Community Edition için tasarlanmış, aylık satış detaylar
 sistemi ile analiz eden kapsamlı bir raporlama sistemidir.
 
 Temel Özellikler:
-* Aylık satış analizi (tarih aralığı seçilebilir)
-* Hiyerarşik kategori raporlaması (alt kategoriler dahil)
-* İsteğe bağlı tekil ürün analizi
-* Çoklu para birimi desteği (USD dönüştürme)
-* Tarih aralığı filtreleme
+* 3 Seviyeli Drill-Down Sistemi (Aylık → Günlük → Fatura Detayı)
+* Aylık kategori toplamları ve trend analizi
+* Günlük satış detayları ve fatura sayıları
+* Detaylı fatura analizi (müşteri, satış temsilcisi, ödeme durumu)
+* Ürün bazında maliyet analizi ve kar marjı hesaplama
+* Çoklu para birimi desteği
 * Excel export özelliği
 * Kategori ve ürün filtreleme seçenekleri
+* Navigation breadcrumb sistemi
+
+Yeni Özellikler v2.0:
+* Alış maliyeti ve kar marjı analizi
+* Satış temsilcisi bazında raporlama
+* Ödeme durumu takibi
+* Faturaya direkt erişim
+* Gelişmiş navigasyon sistemi
 
 Teknik Detaylar:
 * Veri kaynağı: Account Move Lines (Fatura Kalemleri)
@@ -26,12 +35,15 @@ Teknik Detaylar:
 * İptal edilmiş ve taslak faturalar hariç
 * Otomatik para birimi dönüştürme
 * Kategori hiyerarşisi desteği
+* Transient model tabanlı (geçici veri saklama)
 
 Kullanım:
-* Accounting > Reporting > Kategori/Ürün Satış Raporu menüsüne gidin
+* Accounting > Reporting > Aylık Satış Detay Rapor menüsüne gidin
 * Tarih aralığınızı ve filtrelerinizi ayarlayın
 * "Rapor Oluştur" butonuna tıklayın
-* Sonuçları görüntüleyin ve Excel'e aktarın
+* "Bu Ayın Detayları" ile günlük analize geçin
+* "Bu Günün Faturalarını Gör" ile fatura detayına inin
+* "Faturayı Odoo'da Aç" ile orijinal faturaya erişin
 
 Gereksinimler:
 * Ürün kategorileri düzgün tanımlanmış olmalı
