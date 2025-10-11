@@ -17,9 +17,9 @@
     </record>
 
     <!-- Daily Report Tree View -->
-    <record id="medical_consumables_sales_daily_line_tree" model="ir.ui.view">
-        <field name="name">medical.consumables.sales.daily.line.tree</field>
-        <field name="model">medical.consumables.sales.daily.line</field>
+    <record id="monthly_sales_detail_daily_line_tree" model="ir.ui.view">
+        <field name="name">monthly.sales.detail.daily.line.tree</field>
+        <field name="model">monthly.sales.detail.daily.line</field>
         <field name="arch" type="xml">
             <tree>
                 <field name="date" string="Tarih"/>
