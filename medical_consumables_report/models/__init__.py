@@ -1,3 +1,3 @@
 # -*- coding: utf-8 -*-
 
-from . import medical_consumables_sales_report
+from . import monthly_sales_detail_report
