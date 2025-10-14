@@ -1,0 +1,336 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Report Line Tree View -->
+    <record id="monthly_sales_detail_report_line_tree" model="ir.ui.view">
+        <field name="name">monthly.sales.detail.report.line.tree</field>
+        <field name="model">monthly.sales.detail.report.line</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="month"/>
+                <field name="category_name"/>
+                <field name="product_name"/>
+                <field name="amount" sum="Toplam"/>
+                <field name="is_category_total" invisible="1"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Daily Report Tree View -->
+    <record id="monthly_sales_detail_daily_line_tree" model="ir.ui.view">
+        <field name="name">monthly.sales.detail.daily.line.tree</field>
+        <field name="model">monthly.sales.detail.daily.line</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="date" string="Tarih"/>
+                <field name="category_id" invisible="1"/>
+                <field name="category_name" string="Kategori"/>
+                <field name="total_amount" string="Toplam Tutar" sum="Genel Toplam"/>
+                <field name="invoice_count" string="Fatura Sayısı" sum="Toplam Fatura"/>
+                <button name="drill_down_to_invoices" 
+                        string="Faturaları Gör" 
+                        type="object" 
+                        class="oe_link"
+                        context="{'default_date': date, 'default_category_id': category_id}"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Invoice Report Tree View -->
+    <record id="monthly_sales_detail_invoice_line_tree" model="ir.ui.view">
+        <field name="name">monthly.sales.detail.invoice.line.tree</field>
+        <field name="model">monthly.sales.detail.invoice.line</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="invoice_id" invisible="1"/>
+                <field name="invoice_name" string="Fatura No"/>
+                <field name="invoice_date" string="Tarih"/>
+                <field name="partner_name" string="Müşteri"/>
+                <field name="salesman_name" string="Satış Temsilcisi"/>
+                <field name="amount_untaxed" string="Vergi Hariç" sum="Toplam"/>
+                <field name="amount_tax" string="Vergi" sum="Toplam Vergi"/>
+                <field name="amount_total" string="Genel Toplam" sum="Genel Toplam"/>
+                <field name="payment_state" string="Ödeme Durumu"/>
+                <field name="currency_name" string="Para Birimi"/>
+                <button name="open_invoice" 
+                        string="Faturayı Aç" 
+                        type="object" 
+                        class="oe_link"
+                        context="{'default_invoice_id': invoice_id}"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Main Report Form View -->
+    <record id="monthly_sales_detail_report_form" model="ir.ui.view">
+        <field name="name">monthly.sales.detail.report.form</field>
+        <field name="model">monthly.sales.detail.report</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="generate_report" 
+                            string="Rapor Oluştur" 
+                            type="object" 
+                            class="oe_highlight"
+                            attrs="{'invisible': [('detail_level', '!=', 'monthly')]}"/>
+                    <button name="back_to_monthly" 
+                            string="Ana Rapora Dön" 
+                            type="object" 
+                            class="oe_highlight"
+                            attrs="{'invisible': [('detail_level', '=', 'monthly')]}"/>
+                    <button name="back_to_daily" 
+                            string="Günlük Detaya Dön" 
+                            type="object"
+                            attrs="{'invisible': [('detail_level', '!=', 'invoice')]}"/>
+                    <field name="detail_level" invisible="1"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>Aylık Satış Detay Rapor</h1>
+                        <h2 attrs="{'invisible': [('breadcrumb_text', '=', False)]}">
+                            <field name="breadcrumb_text" readonly="1" nolabel="1"/>
+                        </h2>
+                    </div>
+                    
+                    <group attrs="{'invisible': [('detail_level', '!=', 'monthly')]}">
+                        <group name="date_filters" string="Tarih Filtreleri">
+                            <field name="date_from" string="Başlangıç Tarihi"/>
+                            <field name="date_to" string="Bitiş Tarihi"/>
+                        </group>
+                        <group name="other_filters" string="Diğer Filtreler">
+                            <field name="currency_id" string="Hedef Para Birimi"/>
+                            <field name="include_subcategories" string="Alt Kategorileri Dahil Et"/>
+                        </group>
+                    </group>
+                    
+                    <group attrs="{'invisible': [('detail_level', '!=', 'monthly')]}">
+                        <group name="category_filters" string="Kategori Filtreleri">
+                            <field name="category_ids" 
+                                   widget="many2many_tags"
+                                   placeholder="Tüm kategoriler için boş bırakın"/>
+                        </group>
+                        <group name="product_filters" string="Ürün Filtreleri">
+                            <field name="product_ids" 
+                                   widget="many2many_tags"
+                                   placeholder="İsteğe bağlı: Ayrı analiz edilecek ürünleri seçin"/>
+                        </group>
+                    </group>
+                    
+                    <!-- Navigation hidden fields -->
+                    <group invisible="1">
+                        <field name="selected_month"/>
+                        <field name="selected_date"/>
+                        <field name="selected_category_id"/>
+                    </group>
+                    
+                    <notebook>
+                        <!-- Aylık Rapor Sonuçları -->
+                        <page string="Rapor Sonuçları" 
+                              attrs="{'invisible': ['|', ('report_lines', '=', []), ('detail_level', '!=', 'monthly')]}">
+                            <field name="report_lines">
+                                <tree decoration-bf="is_category_total == True">
+                                    <field name="month" string="Ay"/>
+                                    <field name="category_name" string="Kategori"/>
+                                    <field name="product_name" string="Ürün"/>
+                                    <field name="amount" sum="Toplam" string="Tutar"/>
+                                    <field name="is_category_total" invisible="1"/>
+                                    <button name="drill_down_to_daily" 
+                                            string="Bu Ayın Detayları" 
+                                            type="object" 
+                                            class="oe_link"
+                                            attrs="{'invisible': [('is_category_total', '=', False)]}"
+                                            context="{'default_month': month, 'default_category_id': False}"/>
+                                </tree>
+                            </field>
+                        </page>
+                        
+                        <!-- Günlük Detaylar -->
+                        <page string="Günlük Detaylar" 
+                              attrs="{'invisible': ['|', ('daily_lines', '=', []), ('detail_level', '!=', 'daily')]}">
+                            <field name="daily_lines" widget="one2many_list">
+                                <tree>
+                                    <field name="date" string="Tarih"/>
+                                    <field name="category_id" invisible="1"/>
+                                    <field name="category_name" string="Kategori"/>
+                                    <field name="total_amount" string="Toplam Tutar" sum="Genel Toplam"/>
+                                    <field name="invoice_count" string="Fatura Sayısı" sum="Toplam Fatura"/>
+                                    <button name="drill_down_to_invoices" 
+                                            string="Bu Günün Faturalarını Gör" 
+                                            type="object" 
+                                            class="oe_link"
+                                            context="{'default_date': date, 'default_category_id': category_id}"/>
+                                </tree>
+                            </field>
+                        </page>
+                        
+                        <!-- Fatura Detayları -->
+                        <page string="Fatura Detayları" 
+                              attrs="{'invisible': ['|', ('invoice_lines', '=', []), ('detail_level', '!=', 'invoice')]}">
+                            <field name="invoice_lines" widget="one2many_list">
+                                <tree>
+                                    <field name="invoice_id" invisible="1"/>
+                                    <field name="invoice_name" string="Fatura No"/>
+                                    <field name="invoice_date" string="Tarih"/>
+                                    <field name="partner_name" string="Müşteri"/>
+                                    <field name="salesman_name" string="Satış Temsilcisi"/>
+                                    <field name="amount_untaxed" string="Vergi Hariç" sum="Toplam"/>
+                                    <field name="amount_tax" string="Vergi" sum="Toplam Vergi"/>
+                                    <field name="amount_total" string="Genel Toplam" sum="Genel Toplam"/>
+                                    <field name="payment_state" string="Ödeme Durumu"/>
+                                    <field name="currency_name" string="Para Birimi"/>
+                                    <button name="open_invoice" 
+                                            string="Faturayı Odoo'da Aç" 
+                                            type="object" 
+                                            class="oe_link"
+                                            context="{'default_invoice_id': invoice_id}"/>
+                                </tree>
+                            </field>
+                        </page>
+                        
+                        <page string="Excel İndir" attrs="{'invisible': [('excel_file', '=', False)]}">
+                            <group>
+                                <field name="excel_filename" invisible="1"/>
+                                <field name="excel_file" 
+                                       filename="excel_filename"
+                                       widget="binary"
+                                       string="Excel Dosyası"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Wizard Action -->
+    <record id="action_monthly_sales_detail_report" model="ir.actions.act_window">
+        <field name="name">Aylık Satış Detay Rapor</field>
+        <field name="res_model">monthly.sales.detail.report</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{}</field>
+    </record>
+
+    <!-- Menu Item -->
+    <menuitem id="menu_monthly_sales_detail_report"
+              name="Aylık Satış Detay Rapor"
+              parent="account.menu_finance_reports"
+              action="action_monthly_sales_detail_report"
+              sequence="50"/>
+
+    <!-- Supplier Monthly Sales Report Views -->
+    <record id="monthly_supplier_sales_main_line_tree" model="ir.ui.view">
+        <field name="name">monthly.supplier.sales.main.line.tree</field>
+        <field name="model">monthly.supplier.sales.main.line</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="supplier_id"/>
+                <field name="supplier_name"/>
+                <field name="month"/>
+                <field name="total_sales" sum="Toplam"/>
+                <field name="total_cost" sum="Toplam"/>
+                <field name="margin" sum="Toplam"/>
+                <field name="margin_percent"/>
+                <button name="open_supplier_month"
+                        string="Ay Detayı"
+                        type="object"
+                        class="oe_link"
+                        context="{'default_supplier_id': supplier_id, 'default_month': month}"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="monthly_supplier_sales_supplier_month_line_tree" model="ir.ui.view">
+        <field name="name">monthly.supplier.sales.supplier.month.line.tree</field>
+        <field name="model">monthly.supplier.sales.supplier.month.line</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="invoice_id" invisible="1"/>
+                <field name="invoice_name"/>
+                <field name="invoice_date"/>
+                <field name="total_sales" sum="Toplam"/>
+                <field name="total_cost" sum="Toplam"/>
+                <field name="margin" sum="Toplam"/>
+                <field name="margin_percent"/>
+                <button name="open_invoices"
+                        string="Fatura Kalemleri"
+                        type="object"
+                        class="oe_link"
+                        context="{'default_invoice_id': invoice_id}"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="monthly_supplier_sales_invoice_line_line_tree" model="ir.ui.view">
+        <field name="name">monthly.supplier.sales.invoice.line.line.tree</field>
+        <field name="model">monthly.supplier.sales.invoice.line.line</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="product_name"/>
+                <field name="quantity"/>
+                <field name="unit_cost"/>
+                <field name="price_unit"/>
+                <field name="price_subtotal" sum="Toplam"/>
+                <field name="margin" sum="Toplam"/>
+                <field name="margin_percent"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="monthly_supplier_sales_report_form" model="ir.ui.view">
+        <field name="name">monthly.supplier.sales.report.form</field>
+        <field name="model">monthly.supplier.sales.report</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="generate_report" string="Rapor Oluştur" type="object" class="oe_highlight" attrs="{'invisible': [('detail_level', '!=', 'main')]}"/>
+                    <field name="detail_level" invisible="1"/>
+                </header>
+                <sheet>
+                    <group attrs="{'invisible': [('detail_level', '!=', 'main')]}">
+                        <group>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                        </group>
+                        <group>
+                            <field name="supplier_ids" widget="many2many_tags"/>
+                            <field name="currency_id"/>
+                        </group>
+                    </group>
+
+                    <group invisible="1">
+                        <field name="selected_supplier_id"/>
+                        <field name="selected_month"/>
+                        <field name="selected_invoice_id"/>
+                    </group>
+
+                    <notebook>
+                        <page string="Aylık Özet" attrs="{'invisible': ['|', ('main_lines', '=', []), ('detail_level', '!=', 'main')]}">
+                            <field name="main_lines"/>
+                        </page>
+                        <page string="Tedarikçi Ay Detayı" attrs="{'invisible': ['|', ('supplier_month_lines', '=', []), ('detail_level', '!=', 'supplier_month')]}">
+                            <field name="supplier_month_lines"/>
+                        </page>
+                        <page string="Fatura Satırları" attrs="{'invisible': ['|', ('invoice_line_lines', '=', []), ('detail_level', '!=', 'invoice_line')]}">
+                            <field name="invoice_line_lines"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_monthly_supplier_sales_report" model="ir.actions.act_window">
+        <field name="name">Tedarikçi Aylık Satış Raporu</field>
+        <field name="res_model">monthly.supplier.sales.report</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <menuitem id="menu_monthly_supplier_sales_report"
+              name="Tedarikçi Aylık Satış Raporu"
+              parent="account.menu_finance_reports"
+              action="action_monthly_supplier_sales_report"
+              sequence="51"/>
+
+</odoo>
