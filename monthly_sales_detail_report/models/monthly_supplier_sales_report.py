@@ -41,6 +41,15 @@ class MonthlySupplierSalesReport(models.TransientModel):
         # Prefer standard_price as last cost; for avg cost environments, this may differ
         return product.standard_price or 0.0
 
+    def _get_product_vendor_partner(self, product):
+        if not product:
+            return False
+        seller = product.seller_ids[:1]
+        if not seller:
+            return False
+        # Odoo versions differ: vendor field can be `partner_id` or `name`
+        return getattr(seller, 'partner_id', False) or getattr(seller, 'name', False)
+
     def _convert_amount(self, amount, src_currency, company, date):
         return src_currency._convert(amount, self.currency_id, company, date)
 
@@ -68,7 +77,7 @@ class MonthlySupplierSalesReport(models.TransientModel):
             for line in inv.invoice_line_ids:
                 if not line.product_id:
                     continue
-                vendor_partner = line.product_id.seller_ids[:1].name
+                vendor_partner = self._get_product_vendor_partner(line.product_id)
                 if not vendor_partner:
                     continue
                 if supplier_ids_filter and vendor_partner.id not in supplier_ids_filter:
@@ -159,10 +168,10 @@ class MonthlySupplierSalesReport(models.TransientModel):
         for inv in invoices:
             # Determine if invoice contains products linked to supplier
             has_supplier = False
-            invoice_sales = 0.0
-            invoice_cost = 0.0
+            invoice_sales = 0.0  # in invoice currency
+            invoice_cost = 0.0   # in company currency
             for line in inv.invoice_line_ids:
-                prod_supplier = line.product_id.seller_ids[:1].name if line.product_id else False
+                prod_supplier = self._get_product_vendor_partner(line.product_id) if line.product_id else False
                 if prod_supplier and prod_supplier.id == supplier:
                     has_supplier = True
                     unit_cost = self._compute_cost_price(line)
@@ -171,17 +180,22 @@ class MonthlySupplierSalesReport(models.TransientModel):
             if not has_supplier:
                 continue
 
-            margin = invoice_sales - invoice_cost
-            margin_pct = (margin / invoice_sales * 100.0) if invoice_sales else 0.0
+            # Convert to target currency consistently
+            sales_conv = self._convert_amount(invoice_sales, inv.currency_id, inv.company_id, inv.invoice_date)
+            cost_conv = self._convert_amount(invoice_cost, inv.company_id.currency_id, inv.company_id, inv.invoice_date)
+            sales_conv = abs(sales_conv)
+            cost_conv = abs(cost_conv)
+            margin_conv = sales_conv - cost_conv
+            margin_pct = (margin_conv / sales_conv * 100.0) if sales_conv else 0.0
             line_vals.append({
                 'report_id': self.id,
                 'invoice_id': inv.id,
                 'invoice_name': inv.name,
                 'invoice_date': inv.invoice_date,
                 'supplier_id': supplier,
-                'total_sales': self._convert_amount(invoice_sales, inv.currency_id, inv.company_id, inv.invoice_date),
-                'total_cost': self._convert_amount(invoice_cost, inv.company_id.currency_id, inv.company_id, inv.invoice_date),
-                'margin': self._convert_amount(margin, inv.company_id.currency_id, inv.company_id, inv.invoice_date),
+                'total_sales': sales_conv,
+                'total_cost': cost_conv,
+                'margin': margin_conv,
                 'margin_percent': margin_pct,
             })
 
