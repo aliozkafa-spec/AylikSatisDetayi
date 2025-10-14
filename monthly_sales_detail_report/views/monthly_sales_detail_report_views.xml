@@ -218,4 +218,119 @@
               action="action_monthly_sales_detail_report"
               sequence="50"/>
 
+    <!-- Supplier Monthly Sales Report Views -->
+    <record id="monthly_supplier_sales_main_line_tree" model="ir.ui.view">
+        <field name="name">monthly.supplier.sales.main.line.tree</field>
+        <field name="model">monthly.supplier.sales.main.line</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="supplier_id"/>
+                <field name="supplier_name"/>
+                <field name="month"/>
+                <field name="total_sales" sum="Toplam"/>
+                <field name="total_cost" sum="Toplam"/>
+                <field name="margin" sum="Toplam"/>
+                <field name="margin_percent"/>
+                <button name="open_supplier_month"
+                        string="Ay Detayı"
+                        type="object"
+                        class="oe_link"
+                        context="{'default_supplier_id': supplier_id, 'default_month': month}"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="monthly_supplier_sales_supplier_month_line_tree" model="ir.ui.view">
+        <field name="name">monthly.supplier.sales.supplier.month.line.tree</field>
+        <field name="model">monthly.supplier.sales.supplier.month.line</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="invoice_id" invisible="1"/>
+                <field name="invoice_name"/>
+                <field name="invoice_date"/>
+                <field name="total_sales" sum="Toplam"/>
+                <field name="total_cost" sum="Toplam"/>
+                <field name="margin" sum="Toplam"/>
+                <field name="margin_percent"/>
+                <button name="open_invoices"
+                        string="Fatura Kalemleri"
+                        type="object"
+                        class="oe_link"
+                        context="{'default_invoice_id': invoice_id}"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="monthly_supplier_sales_invoice_line_line_tree" model="ir.ui.view">
+        <field name="name">monthly.supplier.sales.invoice.line.line.tree</field>
+        <field name="model">monthly.supplier.sales.invoice.line.line</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="product_name"/>
+                <field name="quantity"/>
+                <field name="unit_cost"/>
+                <field name="price_unit"/>
+                <field name="price_subtotal" sum="Toplam"/>
+                <field name="margin" sum="Toplam"/>
+                <field name="margin_percent"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="monthly_supplier_sales_report_form" model="ir.ui.view">
+        <field name="name">monthly.supplier.sales.report.form</field>
+        <field name="model">monthly.supplier.sales.report</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="generate_report" string="Rapor Oluştur" type="object" class="oe_highlight" attrs="{'invisible': [('detail_level', '!=', 'main')]}"/>
+                    <field name="detail_level" invisible="1"/>
+                </header>
+                <sheet>
+                    <group attrs="{'invisible': [('detail_level', '!=', 'main')]}">
+                        <group>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                        </group>
+                        <group>
+                            <field name="supplier_ids" widget="many2many_tags"/>
+                            <field name="currency_id"/>
+                        </group>
+                    </group>
+
+                    <group invisible="1">
+                        <field name="selected_supplier_id"/>
+                        <field name="selected_month"/>
+                        <field name="selected_invoice_id"/>
+                    </group>
+
+                    <notebook>
+                        <page string="Aylık Özet" attrs="{'invisible': ['|', ('main_lines', '=', []), ('detail_level', '!=', 'main')]}">
+                            <field name="main_lines"/>
+                        </page>
+                        <page string="Tedarikçi Ay Detayı" attrs="{'invisible': ['|', ('supplier_month_lines', '=', []), ('detail_level', '!=', 'supplier_month')]}">
+                            <field name="supplier_month_lines"/>
+                        </page>
+                        <page string="Fatura Satırları" attrs="{'invisible': ['|', ('invoice_line_lines', '=', []), ('detail_level', '!=', 'invoice_line')]}">
+                            <field name="invoice_line_lines"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_monthly_supplier_sales_report" model="ir.actions.act_window">
+        <field name="name">Tedarikçi Aylık Satış Raporu</field>
+        <field name="res_model">monthly.supplier.sales.report</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <menuitem id="menu_monthly_supplier_sales_report"
+              name="Tedarikçi Aylık Satış Raporu"
+              parent="account.menu_finance_reports"
+              action="action_monthly_supplier_sales_report"
+              sequence="51"/>
+
 </odoo>
